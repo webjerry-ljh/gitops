@@ -1,0 +1,56 @@
+name: Go
+
+on:
+  push:
+    branches: 
+      - master
+    paths-ignore: 
+      - 'demo/**'
+      - 'webapp/deployment/**'
+  pull_request:
+    branches: 
+      - master
+    paths-ignore: 
+      - 'demo/**'
+      - 'deployment/**'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Build
+      run: | 
+        cd webapp
+        export CGO_ENABLED=0
+        go build -o main main.go
+      
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Login to Amazon ECR
+      uses: docker/login-action@v1
+      with:
+        registry: 390421316924.dkr.ecr.ap-northeast-2.amazonaws.com
+        
+    - name: Docker build and push
+      env:
+        REGISTRY: 390421316924.dkr.ecr.ap-northeast-2.amazonaws.com
+        REPO: webapp
+        TAG: green
+      run: |
+        cd webapp
+        docker build -t $REPO:$TAG .
+        docker tag $REPO:$TAG $REGISTRY/$REPO:$TAG
+        docker push $REGISTRY/$REPO:$TAG
