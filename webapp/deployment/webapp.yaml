@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: webapp
+  name: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - image: 628842917615.dkr.ecr.ap-northeast-2.amazonaws.com/webapp:red
+        name: webapp
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: APP_PORT
+          value: "5000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: webapp
+  name: webapp-svc
+spec:
+  ports:
+  - port: 80
+    name: http
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: webapp
+  type: LoadBalancer
